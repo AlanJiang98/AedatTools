@@ -19,6 +19,7 @@ from geometry_msgs.msg import Vector3
 from cv_bridge import CvBridge #, CvBridgeError
 import rospy
 import matplotlib.pyplot as plt
+import cv2
 
 def ExportRosbag(aedat):
     
@@ -37,17 +38,20 @@ def ExportRosbag(aedat):
             if frameIndex % 10 == 9:
                 print 'Writing img message', frameIndex + 1, 'of', aedat['data']['frame']['numEvents'], ' ...'
             img = aedat['data']['frame']['samples'][frameIndex]
-            print type(img)
-            imgplot = plt.imshow(img)
-            plt.show()
-            # The sample is really 10 bits, but held in a uint16; 
+            # The sample is really 10 bits, but held in a uint16;
             # convert to uint8, dropping the least significant 2 bits
             img = np.right_shift(img, 2)
             img = img.astype('uint8')
-    
+
+            img = cv2.cvtColor(img, cv2.COLOR_BAYER_GR2RGB)
+
+            img = cv2.flip(img, 0)
+            # plt.imshow(img)
+            # plt.show()
+            # return
             # To do: make compatible with aedat3 imports, with different timestamp fields
             timeStamp = rospy.Time(secs=aedat['data']['frame']['timeStampStart'][frameIndex]/1000000.0)
-            img_msg = bridge.cv2_to_imgmsg(img, 'mono8')
+            img_msg = bridge.cv2_to_imgmsg(img, 'rgb8')
             img_msg.header.stamp = timeStamp
             bag.write(topic='/dvs/image_raw', msg=img_msg, t=timeStamp)
         xLength = aedat['data']['frame']['xLength'][0]
@@ -94,8 +98,8 @@ def ExportRosbag(aedat):
             for eventIndex in range (0, endPointer - startPointer):
                 # The Event object definition comes from rpg_dvs_ros
                 e = Event()
-                e.x = eventArrayObject.width - 1 - arrayX[eventIndex] # Flip X - I don't know why this is necessary
-                e.y = arrayY[eventIndex]
+                e.x = xLength - 1 - arrayX[eventIndex]
+                e.y = yLength - 1 - arrayY[eventIndex]
                 e.ts = rospy.Time(arrayTimeStamp[eventIndex])
                 e.polarity = arrayPolarity[eventIndex]
                 eventArray[eventIndex] = e;
