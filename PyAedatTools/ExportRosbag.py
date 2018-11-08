@@ -18,6 +18,7 @@ from sensor_msgs.msg import Imu
 from geometry_msgs.msg import Vector3
 from cv_bridge import CvBridge #, CvBridgeError
 import rospy
+import matplotlib.pyplot as plt
 
 def ExportRosbag(aedat):
     
@@ -36,6 +37,9 @@ def ExportRosbag(aedat):
             if frameIndex % 10 == 9:
                 print 'Writing img message', frameIndex + 1, 'of', aedat['data']['frame']['numEvents'], ' ...'
             img = aedat['data']['frame']['samples'][frameIndex]
+            print type(img)
+            imgplot = plt.imshow(img)
+            plt.show()
             # The sample is really 10 bits, but held in a uint16; 
             # convert to uint8, dropping the least significant 2 bits
             img = np.right_shift(img, 2)
