@@ -252,7 +252,7 @@ def ImportAedatDataVersion1or2(aedat):
                         - outputData['frame']['xPosition'][frameIndex] + 1 
                 outputData['frame']['yLength'][frameIndex] \
                     = max(frameY[frameStarts[frameIndex] : frameStarts[frameIndex + 1]]) \
-                        - outputData['frame']['yPosition'][frameIndex] + 1 
+                        - outputData['frame']['yPosition'][frameIndex] + 1
                 # If we worked out which way the data is ramping in each
                 # direction, and if we could exclude data loss, then we could
                 # do some nice clean matrix transformations; but I'm just going

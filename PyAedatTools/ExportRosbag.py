@@ -6,7 +6,7 @@ import sys
 sys.path.append('/usr/local/lib/python2.7/site-packages')
 sys.path.append('/opt/ros/kinetic/lib')
 sys.path.append('/opt/ros/kinetic/lib/python2.7/dist-packages')
-sys.path.append('/home/sim/catkin_ws/devel/lib/python2.7/dist-packages')
+sys.path.append('/home/cedric/catkin_ws/devel/lib/python2.7/dist-packages')
 import os
 import numpy as np
 #import cv2
@@ -46,10 +46,16 @@ def ExportRosbag(aedat):
             img_msg = bridge.cv2_to_imgmsg(img, 'mono8')
             img_msg.header.stamp = timeStamp
             bag.write(topic='/dvs/image_raw', msg=img_msg, t=timeStamp)
-    
+        xLength = aedat['data']['frame']['xLength'][0]
+        yLength = aedat['data']['frame']['yLength'][0]
+    else:
+        # default size if there are no image frames
+        xLength = 240
+        yLength = 180
+
 #%% Polarity
-    
-    # Put several events into an array in a single ros message, for efficiency     
+
+    # Put several events into an array in a single ros message, for efficiency
     
     if 'polarity' in aedat['data'] \
         and ('dataTypes' not in aedat['info'] or 'polarity' in aedat['info']['dataTypes']): 
@@ -62,8 +68,8 @@ def ExportRosbag(aedat):
         # Use this repeatedly for each message        
         eventArrayObject = EventArray()
         # The following properties don't change
-        eventArrayObject.width = 240 # HARDCODED CONSTANT - RESOLVE ON A RAINY DAY
-        eventArrayObject.height = 180 # HARDCODED CONSTANT - RESOLVE ON A RAINY DAY
+        eventArrayObject.width = xLength
+        eventArrayObject.height = yLength
         # Use the following object array repeatedly to construct the contents 
         # of each ros message
         eventArray = np.empty(-(-numEventsPerArray), 'object')
@@ -84,7 +90,7 @@ def ExportRosbag(aedat):
             for eventIndex in range (0, endPointer - startPointer):
                 # The Event object definition comes from rpg_dvs_ros
                 e = Event()
-                e.x = 239 - arrayX[eventIndex] # Flip X - I don't know why this is necessary
+                e.x = eventArrayObject.width - 1 - arrayX[eventIndex] # Flip X - I don't know why this is necessary
                 e.y = arrayY[eventIndex]
                 e.ts = rospy.Time(arrayTimeStamp[eventIndex])
                 e.polarity = arrayPolarity[eventIndex]
