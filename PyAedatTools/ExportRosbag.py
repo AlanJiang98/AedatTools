@@ -18,7 +18,6 @@ from sensor_msgs.msg import Imu
 from geometry_msgs.msg import Vector3
 from cv_bridge import CvBridge #, CvBridgeError
 import rospy
-import matplotlib.pyplot as plt
 import cv2
 
 def ExportRosbag(aedat):
@@ -43,12 +42,10 @@ def ExportRosbag(aedat):
             img = np.right_shift(img, 2)
             img = img.astype('uint8')
 
-            img = cv2.cvtColor(img, cv2.COLOR_BAYER_GR2RGB)
+            if aedat['info']['source'] == 'DAVIS346':
+                img = cv2.cvtColor(img, cv2.COLOR_BAYER_GR2RGB)
+                img = cv2.flip(img, 0)
 
-            img = cv2.flip(img, 0)
-            # plt.imshow(img)
-            # plt.show()
-            # return
             # To do: make compatible with aedat3 imports, with different timestamp fields
             timeStamp = rospy.Time(secs=aedat['data']['frame']['timeStampStart'][frameIndex]/1000000.0)
             img_msg = bridge.cv2_to_imgmsg(img, 'rgb8')
@@ -99,7 +96,11 @@ def ExportRosbag(aedat):
                 # The Event object definition comes from rpg_dvs_ros
                 e = Event()
                 e.x = xLength - 1 - arrayX[eventIndex]
-                e.y = yLength - 1 - arrayY[eventIndex]
+                if aedat['info']['source'] == 'DAVIS346':
+                    e.y = yLength - 1 - arrayY[eventIndex]
+                else:
+                    e.y = arrayY[eventIndex]
+
                 e.ts = rospy.Time(arrayTimeStamp[eventIndex])
                 e.polarity = arrayPolarity[eventIndex]
                 eventArray[eventIndex] = e;
