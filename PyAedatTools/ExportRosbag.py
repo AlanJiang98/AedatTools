@@ -19,6 +19,7 @@ from geometry_msgs.msg import Vector3
 from cv_bridge import CvBridge #, CvBridgeError
 import rospy
 import cv2
+import math
 
 def ExportRosbag(aedat):
     
@@ -33,9 +34,10 @@ def ExportRosbag(aedat):
     if 'frame' in aedat['data'] \
         and ('dataTypes' not in aedat['info'] or 'frame' in aedat['info']['dataTypes']): 
         bridge = CvBridge()
-        for frameIndex in range(0, aedat['data']['frame']['numEvents']):
-            if frameIndex % 10 == 9:
-                print 'Writing img message', frameIndex + 1, 'of', aedat['data']['frame']['numEvents'], ' ...'
+        numFrames = aedat['data']['frame']['numEvents']
+        for frameIndex in range(0, numFrames):
+            if not frameIndex % round(numFrames/100)*10:
+                print 'Writing img message', frameIndex + 1, 'of', numFrames, ' ...'
             img = aedat['data']['frame']['samples'][frameIndex]
             # The sample is really 10 bits, but held in a uint16;
             # convert to uint8, dropping the least significant 2 bits
@@ -65,9 +67,9 @@ def ExportRosbag(aedat):
     if 'polarity' in aedat['data'] \
         and ('dataTypes' not in aedat['info'] or 'polarity' in aedat['info']['dataTypes']): 
         countMsgs = 0
-        numEventsPerArray = 25000 # Could be a parameter
+        numEventsPerArray = 5000 # Could be a parameter
         numEvents = aedat['data']['polarity']['numEvents']
-        numArrays = - (- numEvents / numEventsPerArray) # The subtraction allows rounding up
+        numArrays = math.ceil(numEvents / numEventsPerArray)
     
         # Construct the event array object - a definition from rpg_dvs_ros
         # Use this repeatedly for each message        
@@ -80,8 +82,9 @@ def ExportRosbag(aedat):
         eventArray = np.empty(-(-numEventsPerArray), 'object')
         # Outer loop over arrays or ros messages
         for startPointer in range(0, numEvents, numEventsPerArray):         
-            countMsgs = countMsgs + 1        
-            print 'Writing event array message', countMsgs, 'of', numArrays, ' ...'
+            countMsgs = countMsgs + 1
+            if not countMsgs % round(numArrays/100)*10:  # print at most 10 times
+                print 'Writing event array message', countMsgs, 'of', numArrays, ' ...'
             endPointer = min(startPointer + numEventsPerArray, numEvents)            
             # Break the data vectors out of the dict for efficiency, 
             # but do this message by message to avoid memory problems
